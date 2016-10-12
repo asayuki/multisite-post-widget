@@ -14,10 +14,11 @@
       'atcat' => false,
       'thumb_size' => 'thumbnail',
       'attag' => false,
-      'excerpt_length' => 10,
+      'excerpt_length' => 200,
       'excerpt_readmore' => __('Read more &rarr;', 'upw'),
       'order' => 'DESC',
       'orderby' => 'date',
+      'hidemeta' => '',
       'meta_key' => '',
       'sticky' => 'show',
       'show_cats' => false,
@@ -53,6 +54,7 @@
     $attag = $instance['attag'];
     $excerpt_length = strip_tags($instance['excerpt_length']);
     $excerpt_readmore = strip_tags($instance['excerpt_readmore']);
+    $hidemeta = $instance['hidemeta'];
     $order = $instance['order'];
     $orderby = $instance['orderby'];
     $meta_key = $instance['meta_key'];
@@ -74,33 +76,33 @@
     $after_posts = format_to_edit($instance['after_posts']);
 
     // Let's turn $types, $cats, and $tags into an array if they are set
-    if (!empty($types)) 
+    if (!empty($types))
     {
         if(!is_array($types))
             $types = explode(',', $types);
     }
-        
-    if (!empty($cats)) 
+
+    if (!empty($cats))
     {
         if(!is_array($cats))
             $cats = explode(',', $cats);
     }
-        
-    if (!empty($tags)) 
+
+    if (!empty($tags))
     {
         if(!is_array($tags))
         {
             $tags = explode(',', $tags);
         }
     }
-    if (!empty($blogs)) 
+    if (!empty($blogs))
     {
         if(!is_array($blogs))
         {
             $blogs = explode(',', $blogs);
         }
     }
-    
+
     // Count number of post types for select box sizing
     $cpt_types = get_post_types( array( 'public' => true ), 'names' );
     if ($cpt_types) {
@@ -113,38 +115,63 @@
         $n = 3;
     }
 
-    
+
     // Count number of categories for select box sizing
     $categories = array();
     $tag_list = array();
-    $post_types = array(); 
-    $all_blogs = wp_get_sites();
-    foreach ( $all_blogs as $blog ) {
+    $post_types = array();
 
-        
-        // switch to the blog
-        switch_to_blog( $blog['blog_id'] );
-        $blogcategory = get_categories( 'hide_empty=0' );
-        foreach ( $blogcategory as $category ) {
-            $categories[] = $category;
-        }
+    if (is_multisite()):
+      $all_blogs = wp_get_sites();
+      foreach ( $all_blogs as $blog ) {
+          // switch to the blog
+          switch_to_blog( $blog['blog_id'] );
 
-        $blogtags = get_tags( 'hide_empty=0' );
-        foreach($blogtags as $tag)
-        {
-            $tag_list[] = $tag;
-        }
+          // Get categories
+          $blogcategory = get_categories( 'hide_empty=0' );
+          foreach ($blogcategory as $category ) {
+              $categories[] = $category;
+          }
 
-        $blogposttypes = get_post_types( array( 'public' => true ), 'names' );
-        foreach($blogposttypes as $post_type )
-        {
-            if(!in_array($post_type, $post_types))
-            {
-                $post_types[] = $post_type;
-            }   
-        }
-    }
-    switch_to_blog( $this->currentblogid );
+          $blogtags = get_tags( 'hide_empty=0' );
+          foreach($blogtags as $tag) {
+              $tag_list[] = $tag;
+          }
+
+          $blogposttypes = get_post_types( array( 'public' => true ), 'names' );
+          foreach($blogposttypes as $post_type )
+          {
+              if(!in_array($post_type, $post_types))
+              {
+                  $post_types[] = $post_type;
+              }
+          }
+      }
+      switch_to_blog( $this->currentblogid );
+
+    else:
+
+      $blogcategory = get_categories( 'hide_empty=0' );
+      foreach ($blogcategory as $category ) {
+          $categories[] = $category;
+      }
+
+      $blogtags = get_tags( 'hide_empty=0' );
+      foreach($blogtags as $tag) {
+          $tag_list[] = $tag;
+      }
+
+      $blogposttypes = get_post_types( array( 'public' => true ), 'names' );
+      foreach($blogposttypes as $post_type )
+      {
+          if(!in_array($post_type, $post_types))
+          {
+              $post_types[] = $post_type;
+          }
+      }
+
+    endif;
+
     if ($categories) {
         foreach ($categories as $cat) {
             $cat_ar[] = $cat;
@@ -156,20 +183,20 @@
     }
 
     // Count number of tags for select box sizing
-    
-    if ($tag_list) 
+
+    if ($tag_list)
     {
-        foreach ($tag_list as $tag) 
+        foreach ($tag_list as $tag)
         {
             $tag_ar[] = $tag;
         }
         $t = count($tag_ar);
-        if($t > 6) 
-        { 
-            $t = 6; 
+        if($t > 6)
+        {
+            $t = 6;
         }
-    } 
-    else 
+    }
+    else
     {
         $t = 3;
     }
@@ -215,22 +242,23 @@
       <div class="upw-tab upw-hide upw-tab-display">
 
         <p>
-
           <label for="<?php echo $this->get_field_id('template'); ?>"><?php _e('Template', 'upw'); ?>:</label>
           <select name="<?php echo $this->get_field_name('template'); ?>" id="<?php echo $this->get_field_id('template'); ?>" class="widefat template">
             <option value="standard"<?php if( $template == 'standard') echo ' selected'; ?>><?php _e('Standard', 'upw'); ?></option>
               <?php
-              $customTemplates = $this->get_theme_templates();
-              foreach($customTemplates as $template)
-              {
-                  echo '<option value="'.$template->filename.'">'.$template->title.'</option>';
-              }
-                  ?>
+                $customTemplates = $this->get_theme_templates();
+                foreach($customTemplates as $templatee) {
+              ?>
+                <option value="<?php echo $templatee->filename; ?>" <?php if( $template == $templatee->filename) echo ' selected'; ?>><?php echo $templatee->title; ?></option>
+              <?php
+                }
+              ?>
           </select>
-            <?php 
-            
-              
-                  ?>
+        </p>
+
+        <p>
+          <input type="checkbox" class="checkbox" id="<?php echo $this->get_field_id('hidemeta'); ?>" name="<?php echo $this->get_field_name('hidemeta'); ?>" <?php checked( (bool) $hidemeta, true ); ?> />
+          <label for="<?php echo $this->get_field_id('hidemeta'); ?>"><?php _e('Hide meta', 'upw'); ?></label>
         </p>
 
         <p>
@@ -249,18 +277,29 @@
           <label for="<?php echo $this->get_field_id('atcat'); ?>"> <?php _e('Show posts only from current category', 'upw');?></label>
         </p>
 
+
+        <?php
+          // Lets fetch used categories
+          $usedCats = array();
+        ?>
         <p>
           <label for="<?php echo $this->get_field_id('cats'); ?>"><?php _e( 'Categories', 'upw' ); ?>:</label>
           <select name="<?php echo $this->get_field_name('cats'); ?>" id="<?php echo $this->get_field_id('cats'); ?>" class="widefat" style="height: auto;" size="<?php echo $c ?>" multiple>
             <option value="" <?php if (empty($cats)) echo 'selected="selected"'; ?>><?php _e('&ndash; Show All &ndash;') ?></option>
-            <?php
-    
-    foreach ($categories as $category ) { ?>
+            <?php foreach ($categories as $category ) { ?>
+              <?php if(!in_array($category->slug, $usedCats)) { ?>
+              <?php $usedCats[] = $category->slug; ?>
               <option value="<?php echo $category->slug; ?>" <?php if(is_array($cats) && in_array($category->slug, $cats)) echo 'selected="selected"'; ?>><?php echo $category->cat_name;?></option>
+              <?php } ?>
             <?php } ?>
           </select>
+          <p>Valda kategorier: <span class="fn-cats"><span></p>
         </p>
 
+        <?php
+          // Lets fetch used tags
+          $usedTags = array();
+        ?>
         <?php if ($tag_list) { ?>
           <p>
             <input type="checkbox" class="checkbox" id="<?php echo $this->get_field_id('attag'); ?>" name="<?php echo $this->get_field_name('attag'); ?>" <?php checked( (bool) $attag, true ); ?> />
@@ -271,11 +310,14 @@
             <label for="<?php echo $this->get_field_id('tags'); ?>"><?php _e( 'Tags', 'upw' ); ?>:</label>
             <select name="<?php echo $this->get_field_name('tags'); ?>" id="<?php echo $this->get_field_id('tags'); ?>" class="widefat" style="height: auto;" size="<?php echo $t ?>" multiple>
               <option value="" <?php if (empty($tags)) echo 'selected="selected"'; ?>><?php _e('&ndash; Show All &ndash;') ?></option>
-              <?php
-                  foreach ($tag_list as $tag) { ?>
-                <option value="<?php echo $tag->slug; ?>" <?php if (is_array($tags) && in_array($tag->slug, $tags)) echo 'selected="selected"'; ?>><?php echo $tag->name;?></option>
+              <?php foreach ($tag_list as $tag) { ?>
+                <?php if(!in_array($tag->slug, $usedTags)) { ?>
+                <?php $usedTags[] = $tag->slug; ?>
+                  <option value="<?php echo $tag->slug; ?>" <?php if (is_array($tags) && in_array($tag->slug, $tags)) echo 'selected="selected"'; ?>><?php echo $tag->name;?></option>
+                <?php } ?>
               <?php } ?>
             </select>
+            <p>Valda etiketter: <span class="fn-tags"><span></p>
           </p>
         <?php } ?>
 
@@ -284,32 +326,35 @@
           <select name="<?php echo $this->get_field_name('types'); ?>" id="<?php echo $this->get_field_id('types'); ?>" class="widefat" style="height: auto;" size="<?php echo $n ?>" multiple>
             <option value="" <?php if (empty($types)) echo 'selected="selected"'; ?>><?php _e('&ndash; Show All &ndash;') ?></option>
             <?php
-    
+
               foreach ($post_types as $post_type ) { ?>
               <option value="<?php echo $post_type; ?>" <?php if(is_array($types) && in_array($post_type, $types)) { echo 'selected="selected"'; } ?>><?php echo $post_type;?></option>
             <?php } ?>
           </select>
+          <p>Valda posttyper: <span class="fn-types"><span></p>
         </p>
+        <?php if (is_multisite()): ?>
         <p>
           <label for="<?php echo $this->get_field_id('blogs'); ?>"><?php _e( 'Websites', 'upw' ); ?>:</label>
           <select name="<?php echo $this->get_field_name('blogs'); ?>" id="<?php echo $this->get_field_id('blogs'); ?>" class="widefat" style="height: auto;" size="<?php echo $n ?>" multiple>
             <option value="" <?php if (empty($blogs)) echo 'selected="selected"'; ?>><?php _e('&ndash; Show All &ndash;') ?></option>
             <?php
-            
-            foreach ($all_blogs as $blog ) { 
+            foreach ($all_blogs as $blog ) {
                 $details = get_blog_details($blog['blog_id']);
                 ?>
               <option value="<?php echo $blog['blog_id']; ?>" <?php if(is_array($blogs) && in_array($blog['blog_id'], $blogs)) { echo 'selected="selected"'; } ?>><?php echo $details->blogname;?></option>
             <?php } ?>
           </select>
+          <p>Valda sidor: <span class="fn-sites"><span></p>
         </p>
+      <?php endif; ?>
 
       </div>
 
       <div class="upw-tab upw-hide upw-tab-order">
 
         <p>
-            
+
           <label for="<?php echo $this->get_field_id('orderby'); ?>"><?php _e('Order by', 'upw'); ?>:</label>
             <select id="<?php echo $this->get_field_id('orderby'); ?>" name="<?php echo $this->get_field_name('orderby'); ?>" class="widefat orderby">
                 <option value="date" <?php if( $orderby == 'date') echo ' selected'; ?>><?php _e('Published Date', 'upw'); ?></option>
@@ -334,8 +379,8 @@
 
       </div>
 
-      <?php if ( $instance ) { 
-          
+      <?php if ( $instance ) {
+
       ?>
 
         <script>
@@ -344,13 +389,57 @@
               if (typeof (window.upwAdmin) !== undefined)
                   window.upwAdmin();
 
+            var categorySelect = document.querySelector('#<?php echo $this->get_field_id('cats'); ?>');
+            var tagsSelect = document.querySelector('#<?php echo $this->get_field_id('tags'); ?>');
+            var typesSelect = document.querySelector('#<?php echo $this->get_field_id('types'); ?>');
+            var sitesSelect = document.querySelector('#<?php echo $this->get_field_id('blogs'); ?>');
+
+            var printSelectedOptionsOnChange = function (selectBox, outputEl) {
+              var output = '';
+              for (var i = 0; i < selectBox.options.length; i++) {
+                if (selectBox.options[i].selected) {
+                  output += selectBox.options[i].innerHTML + ', ';
+                }
+              }
+              outputEl.innerHTML = output.substring(0, output.length-2);
+            }
+
+            if (categorySelect !== null) {
+              categorySelect.addEventListener('change', function (e) {
+                printSelectedOptionsOnChange(categorySelect, document.querySelector('.fn-cats'));
+              });
+              printSelectedOptionsOnChange(categorySelect, document.querySelector('.fn-cats'));
+            }
+
+            if (tagsSelect !== null) {
+              tagsSelect.addEventListener('change', function (e) {
+                printSelectedOptionsOnChange(tagsSelect, document.querySelector('.fn-tags'));
+              });
+              printSelectedOptionsOnChange(tagsSelect, document.querySelector('.fn-tags'));
+            }
+
+
+            if (typesSelect !== null) {
+              typesSelect.addEventListener('change', function (e) {
+                printSelectedOptionsOnChange(typesSelect, document.querySelector('.fn-types'));
+              });
+              printSelectedOptionsOnChange(typesSelect, document.querySelector('.fn-types'));
+            }
+
+            if (sitesSelect !== null) {
+              sitesSelect.addEventListener('change', function (e) {
+                printSelectedOptionsOnChange(sitesSelect, document.querySelector('.fn-sites'));
+              });
+              printSelectedOptionsOnChange(sitesSelect, document.querySelector('.fn-sites'));
+            }
+
             var show_excerpt = $("#<?php echo $this->get_field_id( 'show_excerpt' ); ?>");
             var show_content = $("#<?php echo $this->get_field_id( 'show_content' ); ?>");
             var show_readmore = $("#<?php echo $this->get_field_id( 'show_readmore' ); ?>");
             var show_readmore_wrap = $("#<?php echo $this->get_field_id( 'show_readmore' ); ?>").parents('p');
             var show_thumbnail = $("#<?php echo $this->get_field_id( 'show_thumbnail' ); ?>");
             var show_date = $("#<?php echo $this->get_field_id( 'show_date' ); ?>");
-            
+
             var excerpt_length = $("#<?php echo $this->get_field_id( 'excerpt_length' ); ?>").parents('p');
             var excerpt_readmore_wrap = $("#<?php echo $this->get_field_id( 'excerpt_readmore' ); ?>").parents('p');
                 var thumb_size_wrap = $("#<?php echo $this->get_field_id( 'thumb_size' ); ?>").parents('p');

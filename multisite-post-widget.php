@@ -10,15 +10,14 @@ License: MIT
 */
 
 if ( !class_exists( 'WP_Widget_Multisite_Posts' ) ) {
-
   class WP_Widget_Multisite_Posts extends WP_Widget {
 
       public $currentblogid;
       public $instance;
     function __construct() {
-        
+
         $this->currentblogid = get_current_blog_id();
-        
+
 
       $widget_options = array(
         'classname' => 'widget_multisite_posts',
@@ -72,6 +71,7 @@ if ( !class_exists( 'WP_Widget_Multisite_Posts' ) ) {
     }
 
     function update( $new_instance, $old_instance ) {
+      error_log('hej');
       $this->instance = $old_instance;
 
       $this->instance['title'] = strip_tags( $new_instance['title'] );
@@ -81,18 +81,20 @@ if ( !class_exists( 'WP_Widget_Multisite_Posts' ) ) {
 
       $this->instance['types'] = (isset( $new_instance['types'] )) ? implode(',', (array) $new_instance['types']) : '';
 
-      $blogs = (array) $new_instance['blogs'];
-      $this->instance['blogs'] = (isset( $new_instance['blogs'] )) ? implode(',', (array) $new_instance['blogs']) : '';
+      if (is_multisite()):
+        $blogs = (array) $new_instance['blogs'];
+        $this->instance['blogs'] = (isset( $new_instance['blogs'] )) ? implode(',', (array) $new_instance['blogs']) : '';
+      endif;
       $this->instance['cats'] = (isset( $new_instance['cats'] )) ? implode(',', (array) $new_instance['cats']) : '';
       $this->instance['tags'] = (isset( $new_instance['tags'] )) ? implode(',', (array) $new_instance['tags']) : '';
       $this->instance['atcat'] = isset( $new_instance['atcat'] );
       $this->instance['attag'] = isset( $new_instance['attag'] );
-      
-      
+      $this->instance['hidemeta'] = isset($new_instance['hidemeta']);
+
       $this->instance['order'] = $new_instance['order'];
       $this->instance['orderby'] = $new_instance['orderby'];
       $this->instance['meta_key'] = $new_instance['meta_key'];
-      
+
       $this->instance['template'] = strip_tags( $new_instance['template'] );
 
       if (current_user_can('unfiltered_html')) {
@@ -127,11 +129,11 @@ if ( !class_exists( 'WP_Widget_Multisite_Posts' ) ) {
     function sort($filteredposts)
     {
 
-        
+
         usort($filteredposts, array($this, 'itemcompare'));
-        
+
         return $filteredposts;
-        
+
     }
     private function itemcompare($a, $b)
     {
@@ -153,14 +155,14 @@ if ( !class_exists( 'WP_Widget_Multisite_Posts' ) ) {
         {
             $aval = $a->meta_sort_value;
             $bval = $b->meta_sort_value;
-            
+
         }
         else if($orderby == 'menu_order')
         {
             $aval = $a->menu_order;
             $bval = $b->menu_order;
         }
-        
+
         //$custom_fields = $this->instance['custom_fields'];
         if($order == 'ASC')
             return $aval > $bval;
@@ -202,7 +204,7 @@ if ( !class_exists( 'WP_Widget_Multisite_Posts' ) ) {
 
   }
 
-  
+
   function init_wp_widget_multisite_posts() {
     register_widget( 'WP_Widget_Multisite_Posts' );
   }
